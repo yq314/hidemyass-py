@@ -35,7 +35,13 @@ class ConnectionTime(Enum):
     fast = 3
 
 
+class NoResults(Exception):
+    pass
+
+
 Proxy = namedtuple('Proxy', 'ip port country speed connection_time protocol anonymity')
+
+HIDEMYASS_URL = 'http://proxylist.hidemyass.com'
 
 
 @click.command()
@@ -138,53 +144,66 @@ def fetch(country, port, protocol, anonymity_level, include_planet_lab, speed, c
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
         })
 
-        session.get('http://proxylist.hidemyass.com')
+        session.get(HIDEMYASS_URL)
 
-        first_page = True
-        request_page = prev_page = None
+        page = total_pages = 1
+        page_url = None
         output = []
         while number > 0:
-            if first_page:
+            if page == 1:
                 response = retrieve_first_page(session, payload)
-                first_page = False
+                page_url, total_pages = get_pagination(response)
             else:
-                response = retrieve_next_page(session, request_page, prev_page)
+                response = retrieve_next_page(session, page_url, page)
 
-            prev_page = response['url']
-            for proxy in get_proxy(response):
-                if output_format == 'json':
-                    output.append(proxy.__dict__)
-                else:
-                    click.echo(
-                        '{}://{}:{}'.format(
-                            proxy.protocol,
-                            proxy.ip,
-                            proxy.port
-                        ) if output_format == 'compact' else proxy
-                    )
-                number -= 1
-                if number == 0:
+            try:
+                for proxy in get_proxy(response):
+                    if output_format == 'json':
+                        output.append(proxy.__dict__)
+                    else:
+                        click.echo(
+                            '{}://{}:{}'.format(
+                                proxy.protocol,
+                                proxy.ip,
+                                proxy.port
+                            ) if output_format == 'compact' else proxy
+                        )
+                    number -= 1
+
+                    if number == 0:
+                        break
+                page += 1
+                if number == 0 or total_pages == 0 or page > total_pages:
                     break
+            except NoResults:
+                break
 
     if output_format == 'json':
         click.echo(json.dumps(output))
 
 
+def get_pagination(response):
+    pagination = lxml.html.fromstring(response['pagination'])
+    return response['url'], len(pagination.xpath('//ul/li[position()>1 and position()<last()]'))
+
+
 def get_proxy(response):
-    # table = response['table'].replace(r'\"', '"').replace(r'\/', '/').replace(r'\n', '\n')
     table_html = lxml.html.fromstring(
         remove_hidden_items(response['table'])
     )
 
     for row in table_html.xpath('//tr'):
+        if row.xpath('string(@id)') == 'noresult':
+            raise NoResults
+
         yield Proxy(
-            ip=row.xpath('string(td[2])').strip(),
-            port=row.xpath('string(td[3])').strip(),
-            country=row.xpath('string(td[4])').strip(),
-            speed=row.xpath('string(td[5]/div/@value)').strip(),
-            connection_time=row.xpath('string(td[6]/div/@value)').strip(),
-            protocol=row.xpath('string(td[7])').strip(),
-            anonymity=row.xpath('string(td[8])').strip()
+            ip=row.xpath('string(./td[2])').strip(),
+            port=row.xpath('string(./td[3])').strip(),
+            country=row.xpath('string(./td[4])').strip(),
+            speed=row.xpath('string(./td[5]/div/@value)').strip(),
+            connection_time=row.xpath('string(./td[6]/div/@value)').strip(),
+            protocol=row.xpath('string(./td[7])').strip(),
+            anonymity=row.xpath('string(./td[8])').strip()
         )
 
 
@@ -213,23 +232,23 @@ def remove_hidden_items(table):
 
 def retrieve_first_page(session, payload):
     return session.post(
-        'http://proxylist.hidemyass.com/',
+        HIDEMYASS_URL,
         data=payload,
         headers={
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'DNT': 1,
-            'Referer': 'http://proxylist.hidemyass.com',
+            'Referer': HIDEMYASS_URL,
             'X-Requested-With': 'XMLHttpRequest'
         }
     ).json()
 
 
-def retrieve_next_page(session, request_page, prev_page):
+def retrieve_next_page(session, page_url, page):
     return session.get(
-        'http://proxylist.hidemyass.com{}'.format(request_page),
+        '{}/{}/{}'.format(HIDEMYASS_URL, page_url, page),
         headers={
             'DNT': 1,
-            'Referer': 'http://proxylist.hidemyass.com{}'.format(prev_page),
+            'Referer': '{}/{}/{}'.format(HIDEMYASS_URL, page_url, page - 1),
             'X-Requested-With': 'XMLHttpRequest'
         }
     ).json()
