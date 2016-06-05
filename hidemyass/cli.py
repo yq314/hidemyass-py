@@ -43,6 +43,15 @@ Proxy = namedtuple('Proxy', 'ip port country speed connection_time protocol anon
 
 HIDEMYASS_URL = 'http://proxylist.hidemyass.com'
 
+COUNTRY = [
+    'China', 'Mexico', 'United States', 'Germany', 'Brazil', 'Russian Federation', 'Netherlands', 'France',
+    'Venezuela', 'Switzerland', 'United Kingdom', 'Japan', 'Thailand', 'Hong Kong', 'Korea, Republic of',
+    'Viet Nam', 'Taiwan', 'Sweden', 'Indonesia', 'Canada', 'Taiwan', 'Austria', 'Poland', 'Luxembourg', 'Belgium',
+    'Romania', 'Slovakia', 'Ukraine', 'Malaysia', 'Croatia', 'Israel', 'United Arab Emirates', 'Georgia',
+    'Hungary', 'Colombia', 'Iran', 'Europe', 'Netherlands Antilles', 'Saudi Arabia', 'Iceland', 'Angola',
+    'Bolivia', 'Australia', 'Norway', 'India', 'Bulgaria', 'Chile', 'Kenya', 'Italy', 'Lithuania', 'Czech Republic',
+    'Pakistan', 'Ecuador', 'Moldova, Republic of', 'Trinidad and Tobago', 'Argentina'
+]
 
 @click.command()
 @click.option(
@@ -50,15 +59,7 @@ HIDEMYASS_URL = 'http://proxylist.hidemyass.com'
     default=None,
     multiple=True,
     help="one or multiple countries",
-    type=click.Choice([
-        'China', 'Mexico', 'United States', 'Germany', 'Brazil', 'Russian Federation', 'Netherlands', 'France',
-        'Venezuela', 'Switzerland', 'United Kingdom', 'Japan', 'Thailand', 'Hong Kong', 'Korea, Republic of',
-        'Viet Nam', 'Taiwan', 'Sweden', 'Indonesia', 'Canada', 'Taiwan', 'Austria', 'Poland', 'Luxembourg', 'Belgium',
-        'Romania', 'Slovakia', 'Ukraine', 'Malaysia', 'Croatia', 'Israel', 'United Arab Emirates', 'Georgia',
-        'Hungary', 'Colombia', 'Iran', 'Europe', 'Netherlands Antilles', 'Saudi Arabia', 'Iceland', 'Angola',
-        'Bolivia', 'Australia', 'Norway', 'India', 'Bulgaria', 'Chile', 'Kenya', 'Italy', 'Lithuania', 'Czech Republic',
-        'Pakistan', 'Ecuador', 'Moldova, Republic of', 'Trinidad and Tobago', 'Argentina'
-    ])
+    type=click.Choice(COUNTRY)
 )
 @click.option(
     '--port', '-p',
@@ -114,13 +115,15 @@ def fetch(country, port, protocol, anonymity_level, include_planet_lab, speed, c
         ('pp', 3),  # 100 per page
         ('sortBy', 'date')
     ]
-    if country is None:
-        payload.append(('ac', 'on'))
-    else:
-        for c in country:
-            payload.append(('c[]', c))
 
-    if port is None:
+    if not country:
+        payload.append(('ac', 'on'))
+        country = COUNTRY
+
+    for c in country:
+        payload.append(('c[]', c))
+
+    if not port:
         payload.append(('allPorts', 1))
     payload.append(('p', port or ''))
 
@@ -196,13 +199,14 @@ def get_proxy(response):
         if row.xpath('string(@id)') == 'noresult':
             raise NoResults
 
+        protocol = row.xpath('string(./td[7])').strip().lower()
         yield Proxy(
             ip=row.xpath('string(./td[2])').strip(),
             port=row.xpath('string(./td[3])').strip(),
             country=row.xpath('string(./td[4])').strip(),
             speed=row.xpath('string(./td[5]/div/@value)').strip(),
             connection_time=row.xpath('string(./td[6]/div/@value)').strip(),
-            protocol=row.xpath('string(./td[7])').strip(),
+            protocol='socks5' if protocol == 'socks4/5' else protocol,
             anonymity=row.xpath('string(./td[8])').strip()
         )
 

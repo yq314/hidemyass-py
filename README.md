@@ -48,15 +48,15 @@ Proxy(ip='124.88.67.35', port='81', country='China', speed='1531', connection_ti
 Proxy(ip='124.88.67.54', port='843', country='China', speed='1623', connection_time='444', protocol='HTTP', anonymity='High +KA')
 ```
 
-#### Get 5 proxies in compact format
+#### Get 5 socks5 proxies in compact format
 
 ```
-> hidemyass -n 5 -f compact
-HTTP://101.96.10.32:95
-HTTP://101.96.10.30:93
-HTTP://101.96.11.32:88
-HTTP://101.96.10.33:91
-HTTP://101.96.10.29:81
+> hidemyass -n 5 -o socks5 -f compact
+socks5://139.196.149.182:1080
+socks5://121.43.188.3:1080
+socks5://125.208.9.165:1080
+socks5://218.104.69.106:1080
+socks5://182.254.218.138:1080
 ```
 
 #### Get 5 proxies in json format
