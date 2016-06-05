@@ -62,6 +62,6 @@ HTTP://101.96.10.29:81
 #### Get 5 proxies in json format
 
 ```
-> hidemyass/cli.py -n 5 -f json
+> hidemyass -n 5 -f json
 [{"ip": "203.66.159.46", "port": "3128", "country": "Taiwan", "speed": "6557", "connection_time": "324", "protocol": "HTTPS", "anonymity": "High +KA"}, {"ip": "112.239.75.99", "port": "8888", "country": "China", "speed": "6219", "connection_time": "404", "protocol": "HTTP", "anonymity": "High +KA"}, {"ip": "203.223.143.51", "port": "8080", "country": "Malaysia", "speed": "7527", "connection_time": "209", "protocol": "HTTPS", "anonymity": "High +KA"}, {"ip": "124.88.67.35", "port": "81", "country": "China", "speed": "4414", "connection_time": "450", "protocol": "HTTP", "anonymity": "High +KA"}, {"ip": "101.96.10.42", "port": "88", "country": "Viet Nam", "speed": "8947", "connection_time": "413", "protocol": "HTTP", "anonymity": "High +KA"}]
 ```
