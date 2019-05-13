@@ -240,7 +240,7 @@ def retrieve_first_page(session, payload):
         data=payload,
         headers={
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'DNT': 1,
+            'DNT': '1',
             'Referer': HIDEMYASS_URL,
             'X-Requested-With': 'XMLHttpRequest'
         }
@@ -251,7 +251,7 @@ def retrieve_next_page(session, page_url, page):
     return session.get(
         '{}/{}/{}'.format(HIDEMYASS_URL, page_url, page),
         headers={
-            'DNT': 1,
+            'DNT': '1',
             'Referer': '{}/{}/{}'.format(HIDEMYASS_URL, page_url, page - 1),
             'X-Requested-With': 'XMLHttpRequest'
         }
